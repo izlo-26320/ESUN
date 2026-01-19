@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>專業轉貸效益試算</title>
+    <style>
+        :root {
+            --primary-color: #00994e; /* 玉山綠風格 */
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #333;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px; /* 防止手機縮放 */
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px rgba(0,153,78,0.2);
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        /* 結果區塊 */
+        #resultArea {
+            display: none; /* 預設隱藏 */
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px dashed #eee;
+        }
+        .result-card {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        .result-value {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .highlight {
+            color: #d32f2f;
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-align: center;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        
+        .note {
+            font-size: 0.8rem;
+            color: #888;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🏠 轉貸效益試算</h2>
+    
+    <div class="form-group">
+        <label>房貸餘額 (萬元)</label>
+        <input type="number" id="loanAmount" value="1000" placeholder="例如：1000">
+    </div>
+
+    <div class="form-group">
+        <label>剩餘年限 (年)</label>
+        <input type="number" id="years" value="20" placeholder="例如：20">
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+        <div class="form-group" style="flex:1;">
+            <label>原銀行利率 (%)</label>
+            <input type="number" id="oldRate" value="2.3" step="0.01">
+        </div>
+        <div class="form-group" style="flex:1;">
+            <label>新銀行利率 (%)</label>
+            <input type="number" id="newRate" value="2.06" step="0.01">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>原銀行違約金 (%) <span style="font-size:0.8em; color:#888;">無違約填0</span></label>
+        <input type="number" id="penaltyRate" value="1" step="0.1">
+    </div>
+
+    <div class="form-group">
+        <label>轉貸雜支總和 (元) <span style="font-size:0.8em; color:#888;">(含規費/代書/開辦費)</span></label>
+        <input type="number" id="otherCost" value="20000">
+    </div>
+
+    <button class="btn" onclick="calculate()">開始試算</button>
+
+    <div id="resultArea">
+        <div class="result-card">
+            <div class="result-item">
+                <span>原月付金：</span>
+                <span class="result-value" id="oldPmt">0</span>
+            </div>
+            <div class="result-item">
+                <span>新月付金：</span>
+                <span class="result-value" id="newPmt">0</span>
+            </div>
+            <div class="result-item" style="border-top: 1px solid #ccc; padding-top:10px; margin-top:5px;">
+                <span>每月實質省下：</span>
+                <span class="result-value highlight" id="monthlySave">0</span>
+            </div>
+        </div>
+
+        <div class="result-card" style="background: #fff8e1;">
+            <div class="result-item">
+                <span>轉貸總成本：</span>
+                <span class="result-value" id="totalCost">0</span>
+            </div>
+            <div class="result-item">
+                <span>預估回本期：</span>
+                <span class="result-value" id="paybackPeriod">0</span>
+            </div>
+        </div>
+
+        <div id="adviceBadge" class="badge"></div>
+    </div>
+    
+    <div class="note">
+        *本試算僅供參考，實際金額以銀行核准為準<br>
+        Designed by Bo-Jie Zhan
+    </div>
+</div>
+
+<script>
+    function calculate() {
+        // 1. 獲取輸入值
+        let amount = parseFloat(document.getElementById('loanAmount').value) * 10000; // 轉為元
+        let years = parseFloat(document.getElementById('years').value);
+        let oldRate = parseFloat(document.getElementById('oldRate').value) / 100;
+        let newRate = parseFloat(document.getElementById('newRate').value) / 100;
+        let penaltyRate = parseFloat(document.getElementById('penaltyRate').value) / 100;
+        let otherCost = parseFloat(document.getElementById('otherCost').value);
+
+        // 2. 計算成本
+        let penaltyCost = amount * penaltyRate; // 違約金
+        // 政府規費估算：設定金額(1.2倍) * 0.1%
+        let govFee = (amount * 1.2) * 0.001; 
+        
+        // 如果使用者有輸入雜支，我們假設雜支已包含規費與代書費，若要自動算可打開下面這行
+        // let totalCost = penaltyCost + govFee + otherCost; 
+        // 簡化版：直接用使用者輸入的「雜支」+ 自動算的「違約金」
+        let totalCost = penaltyCost + otherCost; 
+
+        // 3. PMT 計算 (本息平均攤還)
+        // 公式：P * r * (1+r)^n / ((1+r)^n - 1)
+        let months = years * 12;
+        
+        let oldRateMonthly = oldRate / 12;
+        let oldPmt = Math.round(amount * (oldRateMonthly * Math.pow(1 + oldRateMonthly, months)) / (Math.pow(1 + oldRateMonthly, months) - 1));
+
+        let newRateMonthly = newRate / 12;
+        let newPmt = Math.round(amount * (newRateMonthly * Math.pow(1 + newRateMonthly, months)) / (Math.pow(1 + newRateMonthly, months) - 1));
+
+        // 4. 效益計算
+        let monthlySave = oldPmt - newPmt;
+        let paybackMonths = monthlySave > 0 ? (totalCost / monthlySave).toFixed(1) : 999;
+
+        // 5. 顯示結果
+        document.getElementById('oldPmt').innerText = oldPmt.toLocaleString() + " 元";
+        document.getElementById('newPmt').innerText = newPmt.toLocaleString() + " 元";
+        document.getElementById('monthlySave').innerText = monthlySave.toLocaleString() + " 元";
+        document.getElementById('totalCost').innerText = totalCost.toLocaleString() + " 元";
+        document.getElementById('paybackPeriod').innerText = paybackMonths + " 個月";
+
+        // 6. 給出建議
+        let adviceBadge = document.getElementById('adviceBadge');
+        if (monthlySave <= 0) {
+            adviceBadge.className = "badge badge-danger";
+            adviceBadge.innerText = "❌ 轉貸後月付金反而變高，不建議！";
+        } else if (paybackMonths <= 12) {
+            adviceBadge.className = "badge badge-success";
+            adviceBadge.innerText = "⭐ 超級划算！1 年內回本";
+        } else if (paybackMonths <= 24) {
+            adviceBadge.className = "badge badge-success";
+            adviceBadge.innerText = "⭕ 建議承作 (2 年內回本)";
+        } else {
+            adviceBadge.className = "badge badge-warning";
+            adviceBadge.innerText = "⚠️ 回本期較長，請評估";
+        }
+
+        // 顯示結果區
+        document.getElementById('resultArea').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
